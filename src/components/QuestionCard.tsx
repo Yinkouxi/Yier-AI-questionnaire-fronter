@@ -12,6 +12,7 @@ import {
 import { useRequest } from 'ahooks'
 import { updateQuestionService, duplicateQuestionService } from '../services/question'
 import styles from './QuestionCard.module.scss'
+import dayjs from 'dayjs'
 
 const { confirm } = Modal
 
@@ -27,6 +28,7 @@ type PropsType = {
 const QuestionCard: FC<PropsType> = (props: PropsType) => {
   const nav = useNavigate()
   const { _id, title, createdAt, answerCount, isPublished, isStar } = props
+  const formattedDate = dayjs(createdAt).format('YYYY-MM-DD HH:mm:ss')
 
   // 修改 标星
   const [isStarState, setIsStarState] = useState(isStar)
@@ -98,7 +100,7 @@ const QuestionCard: FC<PropsType> = (props: PropsType) => {
           <Space>
             {isPublished ? <Tag color="processing">已发布</Tag> : <Tag>未发布</Tag>}
             <span>答卷: {answerCount}</span>
-            <span>{createdAt}</span>
+            <span>{formattedDate}</span>
           </Space>
         </div>
       </div>

@@ -38,6 +38,7 @@ const List: FC = () => {
         pageSize: LIST_PAGE_SIZE,
         keyword,
       })
+      console.log(data)
       return data
     },
     {
@@ -45,6 +46,7 @@ const List: FC = () => {
       onSuccess(result) {
         const { list: l = [], total = 0 } = result
         setList(list.concat(l)) // 累计
+        console.log(list, 'list')
         setTotal(total)
         setPage(page + 1)
       },

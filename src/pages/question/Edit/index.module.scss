@@ -3,22 +3,27 @@
     flex-direction: column;
     height: 100vh;
     background-color: #f0f2f5;
+    overflow: hidden;
 }
 
 .content-wrapper {
     flex: auto;
     padding: 12px 0;
+    height: 100%;
 }
 
 .content {
     margin: 0 24px;
     display: flex;
     height: 100%;
+    // overflow: hidden;
 
     .left {
         width: 295px;
         background-color: #fff;
         padding: 0 12px;
+        height: 100%;
+        overflow: auto;
     }
 
     .main {
