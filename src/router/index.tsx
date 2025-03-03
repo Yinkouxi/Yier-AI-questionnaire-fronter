@@ -1,4 +1,4 @@
-import React, { lazy } from 'react'
+import React, { lazy, Suspense } from 'react'
 import { createBrowserRouter } from 'react-router-dom'
 
 import MainLayout from '../layouts/MainLayout'
@@ -11,17 +11,29 @@ import NotFound from '../pages/NotFound'
 import List from '../pages/manage/List'
 import Trash from '../pages/manage/Trash'
 import Star from '../pages/manage/Star'
-// import Edit from '../pages/question/Edit'
-// import Stat from '../pages/question/Stat'
 
 // 路由懒加载，拆分 bundle ，优化首页体积
 const Edit = lazy(() => import(/* webpackChunkName: "editPage" */ '../pages/question/Edit'))
 const Stat = lazy(() => import(/* webpackChunkName: "statPage" */ '../pages/question/Stat'))
 
+// 加载中组件
+const LoadingComponent = () => (
+  <div style={{ textAlign: 'center', marginTop: '40px' }}>加载中...</div>
+)
+
+// 错误边界组件
+const ErrorBoundary = ({ error }: { error: Error }) => (
+  <div style={{ textAlign: 'center', marginTop: '40px', color: 'red' }}>
+    <h2>出错啦！</h2>
+    <p>{error.message}</p>
+  </div>
+)
+
 const router = createBrowserRouter([
   {
     path: '/',
     element: <MainLayout />,
+    errorElement: <ErrorBoundary error={new Error('页面出错了')} />,
     children: [
       {
         path: '/',
@@ -62,14 +74,23 @@ const router = createBrowserRouter([
   {
     path: 'question',
     element: <QuestionLayout />,
+    errorElement: <ErrorBoundary error={new Error('问卷加载失败')} />,
     children: [
       {
         path: 'edit/:id',
-        element: <Edit />,
+        element: (
+          <Suspense fallback={<LoadingComponent />}>
+            <Edit />
+          </Suspense>
+        ),
       },
       {
-        path: 'stat/:id', // statistic 统计
-        element: <Stat />,
+        path: 'stat/:id',
+        element: (
+          <Suspense fallback={<LoadingComponent />}>
+            <Stat />
+          </Suspense>
+        ),
       },
     ],
   },
