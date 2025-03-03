@@ -19,3 +19,14 @@ export async function getComponentStatService(
   const data = (await axios.get(url)) as ResDataType
   return data
 }
+
+// 获取平台总问卷数和总答卷数
+type platformStatType = {
+  totalQuestions: number
+  totalAnswers: number
+}
+export async function getPlatformStats(): Promise<platformStatType> {
+  const url = `/api/stat/platform/overview`
+  const data = (await axios.get(url)) as platformStatType
+  return data
+}

@@ -1,17 +1,96 @@
 .container {
-    height: calc(100vh - 64px - 65px);
+    min-height: calc(100vh - 64px - 65px);
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
     display: flex;
-    flex-direction: column;
     justify-content: center;
     align-items: center;
-    background-image: linear-gradient(to right, #4facfe 0%, #00f2fe 100%);
+    padding: 40px 20px;
+}
 
-    .info {
-        text-align: center;
+.content {
+    max-width: 1200px;
+    width: 100%;
+    background: transparent;
+    padding: 40px;
+}
 
-        button {
-            height: 60px;
-            font-size: 24px;
+.header {
+    text-align: center;
+    margin-bottom: 80px;
+
+    h1 {
+        margin-bottom: 16px !important;
+        color: #4facfe;
+        font-size: 48px !important;
+    }
+
+    h3 {
+        font-weight: normal !important;
+        color: #666 !important;
+        font-size: 20px !important;
+    }
+}
+
+.features {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 40px;
+    margin-bottom: 80px;
+}
+
+.feature {
+    text-align: center;
+    padding: 32px 24px;
+    transition: all 0.3s ease;
+    background: transparent;
+
+    &:hover {
+        transform: translateY(-5px);
+
+        .icon {
+            transform: scale(1.1);
+            color: #00f2fe;
+        }
+    }
+
+    .icon {
+        font-size: 40px;
+        color: #4facfe;
+        margin-bottom: 20px;
+        transition: all 0.3s ease;
+    }
+
+    h4 {
+        margin-bottom: 16px !important;
+        font-size: 20px !important;
+        color: #333;
+    }
+
+    p {
+        color: #666;
+        margin-bottom: 0 !important;
+        line-height: 1.8;
+        font-size: 15px;
+    }
+}
+
+.action {
+    text-align: center;
+
+    button {
+        height: 50px;
+        padding: 0 48px;
+        font-size: 18px;
+        border-radius: 25px;
+        background: #4facfe;
+        border: none;
+        box-shadow: 0 4px 15px rgba(79, 172, 254, 0.2);
+        transition: all 0.3s ease;
+
+        &:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(79, 172, 254, 0.3);
+            background: #4facfe;
         }
     }
 }
