@@ -54,11 +54,7 @@ const QuestionAI: FC = () => {
           />
         </div>
       ) : (
-        <Tooltip
-          title="秃头刺猬AI助手，帮您生成问卷大纲"
-          open={showTip}
-          placement="left"
-        >
+        <Tooltip title="秃头刺猬AI助手，帮您生成问卷大纲" open={showTip} placement="left">
           <Button
             type="primary"
             shape="circle"

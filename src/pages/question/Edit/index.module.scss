@@ -3,23 +3,20 @@
     flex-direction: column;
     height: 100vh;
     background-color: #f0f2f5;
-    overflow: hidden;
 }
 
 .content-wrapper {
-    flex: auto;
-    padding: 12px 0;
-    height: 100%;
+    flex: 1;
+    overflow: auto;
+    padding: 20px;
 }
 
 .content {
-    margin: 0 24px;
     display: flex;
+    // flex: 1;
     height: 100%;
-    // overflow: hidden;
-
     .left {
-        width: 295px;
+        width: 320px;
         background-color: #fff;
         padding: 0 12px;
         height: 100%;
@@ -30,16 +27,15 @@
         flex: 1;
         position: relative;
         overflow: hidden;
-
         .canvas-wrapper {
             position: absolute;
             width: 400px;
-            height: 712px;
+            height: 620px;
             top: 50%;
             left: 50%;
             transform: translateX(-50%) translateY(-50%);
             overflow: auto;
-            box-shadow: 0 2px 10px #0000001f;
+            // box-shadow: 0 2px 10px #0000001f;
         }
     }
 
@@ -47,5 +43,24 @@
         width: 300px;
         background-color: #fff;
         padding: 0 12px;
+        height: 100%;
     }
 }
+
+// 滚动条样式
+::-webkit-scrollbar {
+    width: 2px;
+    height: 2px;
+  }
+  
+  ::-webkit-scrollbar-thumb {
+    background-color: #d9d9d9;
+    border-radius: 1px;
+    &:hover {
+        background-color: #bfbfbf;
+    }
+  }
+  
+  ::-webkit-scrollbar-track {
+    background-color: transparent;
+  }
