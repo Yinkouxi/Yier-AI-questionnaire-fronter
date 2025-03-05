@@ -1,0 +1,77 @@
+.aiContainer {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  z-index: 1000;
+}
+
+.aiButton {
+  width: 50px;
+  height: 50px;
+  background-color: #1C64F2 !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+
+  &:hover {
+    transform: scale(1.05);
+  }
+}
+
+.chatContainer {
+  position: relative;
+}
+
+.chatWindow {
+  width: 400px;
+  height: 600px;
+  border: none;
+  border-radius: 10px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.minimizeBtn {
+  position: absolute;
+  top: 10px;
+  right: 50px;
+  z-index: 1001;
+  background: #109ee9 !important;
+  color: white;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  padding: 0;
+  border-radius: 4px !important;
+  
+  &:hover {
+    background: #0f96dd !important;
+  }
+
+  &:global(.ant-btn-primary) {
+    background: #109ee9 !important;
+    
+    &:hover {
+      background: #0f96dd !important;
+    }
+  }
+}
+
+.chatHeader {
+  padding: 12px 16px;
+  background: #1C64F2;
+  color: white;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 16px;
+  font-weight: 500;
+}
+
+.closeBtn {
+  color: white;
+  &:hover {
+    color: #f0f0f0;
+    background: rgba(255, 255, 255, 0.1);
+  }
+} 

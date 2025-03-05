@@ -9,6 +9,7 @@ import EditHeader from './EditHeader'
 import EditCanvas from './EditCanvas'
 import LeftPanel from './LeftPanel'
 import RightPanel from './RightPanel'
+import QuestionAI from '../../../components/QuestionAI'
 import styles from './index.module.scss'
 
 const Edit: FC = () => {
@@ -43,6 +44,7 @@ const Edit: FC = () => {
           </div>
         </div>
       </div>
+      <QuestionAI />
     </div>
   )
 }
