@@ -12,6 +12,7 @@ import QuestionCheckboxConf, {
   QuestionCheckboxPropsType,
   QuestionCheckboxStatPropsType,
 } from './QuestionCheckbox'
+import QuestionRatingConf, { QuestionRatingPropsType } from './QuestionRating'
 
 // 统一，各个组件的 prop type
 export type ComponentPropsType = QuestionInputPropsType &
@@ -20,7 +21,8 @@ export type ComponentPropsType = QuestionInputPropsType &
   QuestionInfoPropsType &
   QuestionTextareaPropsType &
   QuestionRadioPropsType &
-  QuestionCheckboxPropsType
+  QuestionCheckboxPropsType &
+  QuestionRatingPropsType
 
 // 统一，各个组件的统计属性类型
 type ComponentStatPropsType = QuestionRadioStatPropsType & QuestionCheckboxStatPropsType
@@ -44,6 +46,7 @@ const componentConfList: ComponentConfType[] = [
   QuestionTextareaConf,
   QuestionRadioConf,
   QuestionCheckboxConf,
+  QuestionRatingConf,
 ]
 
 // 组件分组
@@ -61,7 +64,7 @@ export const componentConfGroup = [
   {
     groupId: 'chooseGroup',
     groupName: '用户选择',
-    components: [QuestionRadioConf, QuestionCheckboxConf],
+    components: [QuestionRadioConf, QuestionCheckboxConf, QuestionRatingConf],
   },
 ]
 
