@@ -1,11 +1,12 @@
 import React, { FC, useEffect } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
-import { Typography, Space, Form, Input, Button, Checkbox, message } from 'antd'
-import { UserAddOutlined } from '@ant-design/icons'
+import { Typography, Form, Input, Button, Checkbox, message } from 'antd'
+import { UserOutlined, LockOutlined } from '@ant-design/icons'
 import { useRequest } from 'ahooks'
 import { REGISTER_PATHNAME, MANAGE_INDEX_PATHNAME } from '../router'
 import { loginService } from '../services/user'
 import { setToken } from '../utils/user-token'
+import loginSvg from '../assets/image/login.svg'
 import styles from './Login.module.scss'
 
 const { Title } = Typography
@@ -33,7 +34,7 @@ function getUserInfoFromStorage() {
 const Login: FC = () => {
   const nav = useNavigate()
 
-  const [form] = Form.useForm() // 第三方 hook
+  const [form] = Form.useForm()
 
   useEffect(() => {
     const { username, password } = getUserInfoFromStorage()
@@ -51,15 +52,11 @@ const Login: FC = () => {
         const { token = '' } = result
         setToken(token)
         message.success('登录成功')
-
-        // 使用 window.location.href 进行跳转
-        // 这会触发页面刷新，确保所有状态都重新初始化
         window.location.href = MANAGE_INDEX_PATHNAME
       },
     }
   )
 
-  // 添加一个路由变化的监听
   useEffect(() => {
     console.log('当前路径:', window.location.pathname)
   }, [])
@@ -67,7 +64,7 @@ const Login: FC = () => {
   const onFinish = (values: any) => {
     const { username, password, remember } = values || {}
 
-    run(username, password) // 执行 ajax
+    run(username, password)
 
     if (remember) {
       rememberUser(username, password)
@@ -78,52 +75,52 @@ const Login: FC = () => {
 
   return (
     <div className={styles.container}>
-      <div>
-        <Space>
-          <Title level={2}>
-            <UserAddOutlined />
-          </Title>
-          <Title level={2}>用户登录</Title>
-        </Space>
-      </div>
-      <div>
-        <Form
-          labelCol={{ span: 6 }}
-          wrapperCol={{ span: 16 }}
-          initialValues={{ remember: true }}
-          onFinish={onFinish}
-          form={form}
-        >
-          <Form.Item
-            label="用户名"
-            name="username"
-            rules={[
-              { required: true, message: '请输入用户名' },
-              { type: 'string', min: 5, max: 20, message: '字符长度在 5-20 之间' },
-              { pattern: /^\w+$/, message: '只能是字母数字下划线' },
-            ]}
-          >
-            <Input />
-          </Form.Item>
-          <Form.Item
-            label="密码"
-            name="password"
-            rules={[{ required: true, message: '请输入密码' }]}
-          >
-            <Input.Password />
-          </Form.Item>
-          <Form.Item name="remember" valuePropName="checked" wrapperCol={{ offset: 6, span: 16 }}>
-            <Checkbox>记住我</Checkbox>
-          </Form.Item>
-          <Form.Item wrapperCol={{ offset: 6, span: 16 }}>
-            <Space>
-              <Button type="primary" htmlType="submit">
-                登录
-              </Button>
-              <Link to={REGISTER_PATHNAME}>注册新用户</Link>
-            </Space>
-          </Form.Item>
-        </Form>
+      <div className={styles.content}>
+        <div className={styles.imageSection}>
+          <img src={loginSvg} alt="登录插图" className={styles.loginImage} />
+          <h2 className={styles.brandTitle}>YierQuestionnaire</h2>
+          <p className={styles.brandDesc}>智能问卷系统，让调研更简单，分析更智能</p>
+        </div>
+        <div className={styles.formSection}>
+          <div className={styles.loginCard}>
+            <div className={styles.header}>
+              <Title level={3}>欢迎登录</Title>
+              <p className={styles.subTitle}>请使用您的账号登录系统</p>
+            </div>
+            <Form
+              form={form}
+              layout="vertical"
+              initialValues={{ remember: true }}
+              onFinish={onFinish}
+              className={styles.form}
+            >
+              <Form.Item
+                name="username"
+                rules={[
+                  { required: true, message: '请输入用户名' },
+                  { type: 'string', min: 5, max: 20, message: '字符长度在 5-20 之间' },
+                  { pattern: /^\w+$/, message: '只能是字母数字下划线' },
+                ]}
+              >
+                <Input prefix={<UserOutlined />} placeholder="用户名" size="large" />
+              </Form.Item>
+              <Form.Item name="password" rules={[{ required: true, message: '请输入密码' }]}>
+                <Input.Password prefix={<LockOutlined />} placeholder="密码" size="large" />
+              </Form.Item>
+              <Form.Item name="remember" valuePropName="checked">
+                <Checkbox>记住我</Checkbox>
+              </Form.Item>
+              <Form.Item>
+                <Button type="primary" htmlType="submit" block size="large">
+                  登录
+                </Button>
+              </Form.Item>
+              <div className={styles.footer}>
+                <Link to={REGISTER_PATHNAME}>还没有账号？注册新用户</Link>
+              </div>
+            </Form>
+          </div>
+        </div>
       </div>
     </div>
   )

@@ -1,0 +1,30 @@
+.imageSection {
+    flex: 1;
+    background-color: #f0f7ff;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+    position: relative;
+    overflow: hidden;
+}
+
+.imageSection::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(135deg, rgba(240, 247, 255, 0.7) 0%, rgba(240, 247, 255, 0.3) 100%);
+    z-index: 1;
+}
+
+.loginImage, .registerImage {
+    max-width: 90%;
+    max-height: 90%;
+    object-fit: contain;
+    position: relative;
+    z-index: 2;
+}

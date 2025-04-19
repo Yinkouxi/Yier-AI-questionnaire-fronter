@@ -21,6 +21,7 @@ export default configureStore({
     // 增加了 undo
     components: undoable(componentsReducer, {
       limit: 50, // 限制 undo 50 步
+      //屏蔽部分action不进行undo redo
       filter: excludeAction([
         'components/resetComponents',
         'components/changeSelectedId',
