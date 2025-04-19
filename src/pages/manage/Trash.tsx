@@ -1,140 +1,163 @@
-import React, { FC, useState } from 'react'
+import React, { FC, useState, useEffect } from 'react'
 import { useTitle } from 'ahooks'
-import { Typography, Empty, Table, Tag, Button, Space, Modal, Spin, message } from 'antd'
-import { ExclamationCircleOutlined } from '@ant-design/icons'
+import { Typography, Empty, Button, Spin, message, Input, Modal } from 'antd'
+import {
+  ExclamationCircleOutlined,
+  UndoOutlined,
+  DeleteOutlined,
+  PlusOutlined,
+} from '@ant-design/icons'
 import { useRequest } from 'ahooks'
-import ListSearch from '../../components/ListSearch'
-import ListPage from '../../components/ListPage'
+import { useSearchParams } from 'react-router-dom'
 import useLoadQuestionListData from '../../hooks/useLoadQuestionListData'
 import { updateQuestionService, deleteQuestionsService } from '../../services/question'
+import { LIST_SEARCH_PARAM_KEY } from '../../constant/index'
 import styles from './common.module.scss'
+import { createQuestionService } from '../../services/question'
+import { useNavigate } from 'react-router-dom'
 
 const { Title } = Typography
+const { Search } = Input
 const { confirm } = Modal
 
 const Trash: FC = () => {
   useTitle('YierQuestionnaire - 回收站')
 
+  const [searchParams, setSearchParams] = useSearchParams()
+  const keyword = searchParams.get(LIST_SEARCH_PARAM_KEY) || ''
+
   const { data = {}, loading, refresh } = useLoadQuestionListData({ isDeleted: true })
   const { list = [], total = 0 } = data
 
-  // 记录选中的 id
-  const [selectedIds, setSelectedIds] = useState<string[]>([])
+  const nav = useNavigate()
 
-  // 恢复
-  const { run: recover } = useRequest(
-    async () => {
-      for await (const id of selectedIds) {
-        await updateQuestionService(id, { isDeleted: false })
-      }
+  const { loading: createLoading, run: handleCreateClick } = useRequest(createQuestionService, {
+    manual: true,
+    onSuccess(result) {
+      nav(`/question/edit/${result.id || result._id}`)
+      message.success('创建成功')
     },
-    {
-      manual: true,
-      debounceWait: 500, // 防抖
-      onSuccess() {
-        message.success('恢复成功')
-        refresh() // 手动刷新列表
-        setSelectedIds([])
-      },
-    }
-  )
+  })
 
-  // 删除
-  const { run: deleteQuestion } = useRequest(
-    async () => await deleteQuestionsService(selectedIds),
-    {
-      manual: true,
-      onSuccess() {
-        message.success('删除成功')
-        refresh()
-        setSelectedIds([])
-      },
-    }
-  )
+  const [started, setStarted] = useState(false)
 
-  function del() {
+  useEffect(() => {
+    if (!loading) {
+      setStarted(true)
+    }
+  }, [loading])
+
+  // 处理搜索
+  const handleSearch = (value: string) => {
+    setStarted(false)
+    setSearchParams({ [LIST_SEARCH_PARAM_KEY]: value })
+  }
+
+  // 恢复问卷
+  const handleRecover = (id: string) => {
     confirm({
-      title: '确认彻底删除该问卷？',
+      title: '确定恢复该问卷?',
       icon: <ExclamationCircleOutlined />,
-      content: '删除以后不可以找回',
-      onOk: deleteQuestion,
+      onOk: async () => {
+        await updateQuestionService(id, { isDeleted: false })
+        message.success('恢复成功')
+        refresh()
+      },
     })
   }
 
-  const tableColumns = [
-    {
-      title: '标题',
-      dataIndex: 'title',
-      // key: 'title', // 循环列的 key ，它会默认取 dataIndex 的值
-    },
-    {
-      title: '是否发布',
-      dataIndex: 'isPublished',
-      render: (isPublished: boolean) => {
-        return isPublished ? <Tag color="processing">已发布</Tag> : <Tag>未发布</Tag>
+  // 彻底删除问卷
+  const handleDelete = (id: string) => {
+    confirm({
+      title: '确定彻底删除该问卷?',
+      icon: <ExclamationCircleOutlined />,
+      content: '删除后无法恢复',
+      okType: 'danger',
+      onOk: async () => {
+        await deleteQuestionsService([id])
+        message.success('删除成功')
+        refresh()
       },
-    },
-    {
-      title: '答卷',
-      dataIndex: 'answerCount',
-    },
-    {
-      title: '创建时间',
-      dataIndex: 'createdAt',
-    },
-  ]
-
-  // 可以把 JSX 片段定义为一个变量
-  const TableElem = (
-    <>
-      <div style={{ marginBottom: '16px' }}>
-        <Space>
-          <Button type="primary" disabled={selectedIds.length === 0} onClick={recover}>
-            恢复
-          </Button>
-          <Button danger disabled={selectedIds.length === 0} onClick={del}>
-            彻底删除
-          </Button>
-        </Space>
-      </div>
-      <div style={{ border: '1px solid #e8e8e8' }}>
-        <Table
-          dataSource={list}
-          columns={tableColumns}
-          pagination={false}
-          rowKey={q => q._id}
-          rowSelection={{
-            type: 'checkbox',
-            onChange: selectedRowKeys => {
-              setSelectedIds(selectedRowKeys as string[])
-            },
-          }}
-        />
-      </div>
-    </>
-  )
+    })
+  }
 
   return (
     <>
       <div className={styles.header}>
         <div className={styles.left}>
-          <Title level={3}>回收站</Title>
+          <Title level={3} style={{ marginBottom: 0 }}>
+            回收站
+          </Title>
         </div>
         <div className={styles.right}>
-          <ListSearch />
+          <Search
+            placeholder="输入关键字"
+            onSearch={handleSearch}
+            style={{ width: 200 }}
+            allowClear
+            defaultValue={keyword}
+          />
         </div>
       </div>
       <div className={styles.content}>
         {loading && (
-          <div style={{ textAlign: 'center' }}>
+          <div style={{ textAlign: 'center', padding: '40px 0' }}>
             <Spin />
           </div>
         )}
-        {!loading && list.length === 0 && <Empty description="暂无数据" />}
-        {list.length > 0 && TableElem}
-      </div>
-      <div className={styles.footer}>
-        <ListPage total={total} />
+        {!loading && started && list.length === 0 && (
+          <div className={styles.emptyContainer}>
+            <Empty
+              image={Empty.PRESENTED_IMAGE_SIMPLE}
+              description={
+                <div className={styles.emptyText}>
+                  <p>回收站为空</p>
+                  <p className={styles.emptySubText}>删除的问卷将会保存在这里30天</p>
+                </div>
+              }
+            />
+          </div>
+        )}
+        {!loading && list.length > 0 && (
+          <div className={styles.questionList}>
+            {list.map((q: any) => {
+              const { _id, title, createdAt } = q
+
+              return (
+                <div key={_id} className={styles.questionItem}>
+                  <div className={styles.questionTitle} title={title || `文件标题${_id}`}>
+                    {title || `文件标题${_id}`}
+                  </div>
+                  <div className={styles.questionInfo}>
+                    <div className={styles.infoItem}>
+                      <span>删除时间：</span>
+                      <span>{new Date(createdAt).toLocaleDateString()}</span>
+                    </div>
+                  </div>
+                  <div className={styles.questionActions}>
+                    <button
+                      className={styles.actionButton}
+                      onClick={() => handleRecover(_id)}
+                      title="恢复问卷"
+                    >
+                      <UndoOutlined />
+                    </button>
+                    <button
+                      className={`${styles.actionButton} ${styles.danger}`}
+                      onClick={() => handleDelete(_id)}
+                      title="彻底删除"
+                    >
+                      <DeleteOutlined />
+                    </button>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        )}
+        {!loading && list.length > 0 && (
+          <div className={styles.loadMore}>{total > 6 && <div>共 {total} 项</div>}</div>
+        )}
       </div>
     </>
   )
