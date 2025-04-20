@@ -1,6 +1,17 @@
-import React, { FC, useState, useEffect } from 'react'
+import React, { FC, useState, useEffect, useRef, useMemo } from 'react'
 import { useTitle } from 'ahooks'
-import { Typography, Empty, Spin, Button, Input, message, Modal, Radio } from 'antd'
+import {
+  Typography,
+  Empty,
+  Spin,
+  Button,
+  Input,
+  message,
+  Modal,
+  Radio,
+  Badge,
+  Checkbox,
+} from 'antd'
 import {
   StarFilled,
   StarOutlined,
@@ -11,20 +22,20 @@ import {
   PlusOutlined,
 } from '@ant-design/icons'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import useLoadQuestionListData from '../../hooks/useLoadQuestionListData'
-import { LIST_SEARCH_PARAM_KEY } from '../../constant/index'
+import { LIST_SEARCH_PARAM_KEY, LIST_PAGE_SIZE } from '../../constant/index'
 import styles from './common.module.scss'
 import {
   updateQuestionService,
   duplicateQuestionService,
   createQuestionService,
+  getQuestionListService,
 } from '../../services/question'
-import { useRequest } from 'ahooks'
+import { useRequest, useDebounceFn } from 'ahooks'
 
 const { Title } = Typography
 const { Search } = Input
 
-// 添加与List.tsx相同的日期格式化函数
+// 日期格式化函数
 const formatDateTime = (dateString: string) => {
   if (!dateString) return '--'
   const date = new Date(dateString)
@@ -47,77 +58,178 @@ const Star: FC = () => {
   const keyword = searchParams.get(LIST_SEARCH_PARAM_KEY) || ''
   const isPublished = searchParams.get('isPublished') // 获取发布状态筛选参数
 
-  // 修复: 只传递isStar参数，不传递keyword参数
-  const { data = {}, loading, refresh } = useLoadQuestionListData({ isStar: true })
-  const { list = [], total = 0 } = data
-
-  // 本地过滤关键词搜索和发布状态
-  const filteredList = list.filter((q: any) => {
-    // 关键词筛选
-    const matchKeyword = !keyword || q.title?.toLowerCase().includes(keyword.toLowerCase())
-
-    // 发布状态筛选
-    let matchPublished = true
-    if (isPublished === 'true') {
-      matchPublished = q.isPublished === true
-    } else if (isPublished === 'false') {
-      matchPublished = q.isPublished === false
-    }
-
-    return matchKeyword && matchPublished
-  })
-
-  // 用于本地更新数据的状态
-  const [localList, setLocalList] = useState<any[]>([])
-
-  // 在组件顶部添加started状态
+  // 分页相关状态
+  const [list, setList] = useState<any[]>([])
+  const [total, setTotal] = useState(0)
+  const [page, setPage] = useState(1)
   const [started, setStarted] = useState(false)
+  const [loading, setLoading] = useState(false)
 
-  // 数据加载完成后，更新本地状态
-  useEffect(() => {
-    if (!loading) {
-      if (filteredList.length > 0) {
-        setLocalList(filteredList)
-      } else {
-        setLocalList([])
-      }
-      setStarted(true) // 数据加载完成，设置started为true
+  // 管理模式相关状态
+  const [isManageMode, setIsManageMode] = useState(false)
+  const [selectedIds, setSelectedIds] = useState<string[]>([])
+
+  // 计算是否还有更多数据
+  const haveMoreData = total > list.length
+
+  // 内容区域的ref，用于监听滚动
+  const contentRef = useRef<HTMLDivElement>(null)
+
+  // 加载数据的核心函数
+  const loadData = async (p = 1, append = false) => {
+    const params: Record<string, any> = {
+      page: p,
+      pageSize: LIST_PAGE_SIZE,
+      isStar: true,
     }
-  }, [loading, filteredList, keyword])
 
-  // 使用本地状态或过滤后的数据
-  const displayList = localList.length > 0 || keyword ? localList : filteredList
+    if (keyword) {
+      params.keyword = keyword
+    }
 
-  // 处理搜索
+    if (isPublished === 'true') {
+      params.isPublished = true
+    } else if (isPublished === 'false') {
+      params.isPublished = false
+    }
+
+    setLoading(true)
+    try {
+      const res = await getQuestionListService(params)
+      const { list: newList = [], total: newTotal = 0 } = res || {}
+
+      // 根据append判断是追加还是覆盖
+      if (append) {
+        setList(l => [...l, ...newList])
+      } else {
+        setList(newList)
+      }
+      setTotal(newTotal)
+      setPage(p)
+      setStarted(true)
+    } catch (error) {
+      console.error('加载出错:', error)
+      message.error('加载失败')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // 加载更多
+  const loadMore = async () => {
+    if (loading || !haveMoreData) return
+    await loadData(page + 1, true)
+  }
+
+  // 初始加载
+  useEffect(() => {
+    setStarted(false)
+    setPage(1)
+    setList([])
+    loadData(1, false)
+  }, [keyword, isPublished])
+
+  // 防抖处理滚动加载
+  const { run: tryLoadMore } = useDebounceFn(
+    () => {
+      const elem = contentRef.current
+      if (elem == null) return
+
+      const { scrollTop, scrollHeight, clientHeight } = elem
+      const distance = scrollHeight - scrollTop - clientHeight
+
+      if (distance < 50 && !loading && haveMoreData) {
+        loadMore()
+      }
+    },
+    { wait: 100 }
+  )
+
+  // 滚动监听
+  useEffect(() => {
+    const elem = contentRef.current
+    if (elem == null) return
+
+    elem.addEventListener('scroll', tryLoadMore)
+
+    return () => {
+      elem.removeEventListener('scroll', tryLoadMore)
+    }
+  }, [tryLoadMore])
+
+  // 初次渲染后检查是否需要立即加载更多
+  useEffect(() => {
+    const elem = contentRef.current
+    if (elem && started && haveMoreData && elem.scrollHeight <= elem.clientHeight) {
+      loadMore()
+    }
+  }, [started, haveMoreData])
+
+  // 搜索处理
   const handleSearch = (value: string) => {
-    setStarted(false) // 筛选条件变化，重置started
     const newParams: Record<string, string> = {}
     if (value) newParams[LIST_SEARCH_PARAM_KEY] = value
-    if (isPublished !== null) newParams.isPublished = isPublished
+    if (isPublished !== null && isPublished !== 'all') newParams.isPublished = isPublished
     setSearchParams(newParams)
   }
 
-  // 处理筛选
+  // 筛选处理
   const handleFilterChange = (e: any) => {
-    setStarted(false) // 筛选条件变化，重置started
     const value = e.target.value
     const newParams: Record<string, string> = {}
     if (keyword) newParams[LIST_SEARCH_PARAM_KEY] = keyword
     if (value !== 'all') newParams.isPublished = value
-
     setSearchParams(newParams)
   }
 
-  // 取消标星功能
-  const handleStar = async (id: string) => {
+  // 添加切换管理模式的函数
+  const toggleManageMode = () => {
+    setIsManageMode(!isManageMode)
+    setSelectedIds([])
+  }
+
+  // 添加选择项的函数
+  const handleSelect = (id: string, checked: boolean) => {
+    if (checked) {
+      setSelectedIds([...selectedIds, id])
+    } else {
+      setSelectedIds(selectedIds.filter(item => item !== id))
+    }
+  }
+
+  // 添加全选功能
+  const handleSelectAll = (checked: boolean) => {
+    if (checked) {
+      setSelectedIds(list.map((q: any) => q._id))
+    } else {
+      setSelectedIds([])
+    }
+  }
+
+  // 批量取消标星函数
+  const handleBatchUnstar = async () => {
+    if (selectedIds.length === 0) {
+      message.warning('请先选择问卷')
+      return
+    }
+
     try {
-      await updateQuestionService(id, { isStar: false })
-      message.success('已取消星标')
+      const loadingMsg = message.loading({ content: '操作中...', duration: 0 })
+
+      const promises = selectedIds.map(id => updateQuestionService(id, { isStar: false }))
+
+      await Promise.all(promises)
+      loadingMsg()
+
+      message.success(`已取消 ${selectedIds.length} 个问卷的标星`)
 
       // 从本地列表中移除
-      setLocalList(prevList => prevList.filter((q: any) => q._id !== id))
-      // 刷新数据
-      refresh()
+      setList(prevList => prevList.filter(q => !selectedIds.includes(q._id)))
+      setTotal(prev => prev - selectedIds.length)
+
+      // 退出管理模式并刷新
+      setIsManageMode(false)
+      setSelectedIds([])
     } catch (error) {
       message.error('操作失败')
     }
@@ -147,20 +259,8 @@ const Star: FC = () => {
 
       message.success('复制成功')
 
-      // 复制成功后，刷新数据但保持UI状态
-      // 先设置loading状态，避免界面闪烁
-      const tempList = [...localList]
-      setLocalList([])
-
-      // 刷新数据
-      refresh()
-
-      // 立即恢复原有列表，等待下一次useEffect自动更新
-      setTimeout(() => {
-        if (localList.length === 0) {
-          setLocalList(tempList)
-        }
-      }, 100)
+      // 刷新第一页数据
+      loadData(1, false)
     } catch (error) {
       message.error('复制失败')
     }
@@ -179,8 +279,8 @@ const Star: FC = () => {
           message.success('已移至回收站')
 
           // 从本地列表中移除
-          setLocalList(prevList => prevList.filter((q: any) => q._id !== id))
-          refresh() // 确保数据同步
+          setList(prevList => prevList.filter((q: any) => q._id !== id))
+          setTotal(prev => prev - 1)
         } catch (error) {
           message.error('操作失败')
         }
@@ -196,6 +296,57 @@ const Star: FC = () => {
       message.success('创建成功')
     },
   })
+
+  // 添加取消标星功能
+  const handleStar = async (id: string) => {
+    try {
+      await updateQuestionService(id, { isStar: false })
+      message.success('已取消标星')
+
+      // 从列表中移除
+      setList(prevList => prevList.filter(q => q._id !== id))
+      setTotal(prev => prev - 1)
+    } catch (error) {
+      message.error('操作失败')
+    }
+  }
+
+  // LoadMore元素
+  const LoadMoreContentElem = useMemo(() => {
+    if (loading && page === 1) {
+      return (
+        <div>
+          <Spin size="small" /> 加载中...
+        </div>
+      )
+    }
+
+    if (list.length === 0 && !loading) {
+      return null
+    }
+
+    if (total <= 6) {
+      return null
+    }
+
+    if (list.length >= total) {
+      return <div>已全部加载，共 {total} 条数据</div>
+    }
+
+    if (loading) {
+      return (
+        <div>
+          <Spin size="small" /> 加载更多...
+        </div>
+      )
+    }
+
+    return (
+      <div>
+        向下滚动加载更多（当前 {list.length}/{total}）
+      </div>
+    )
+  }, [loading, list.length, total, page])
 
   return (
     <>
@@ -219,20 +370,35 @@ const Star: FC = () => {
             optionType="button"
             buttonStyle="solid"
             size="middle"
+            style={{ marginRight: '8px' }}
           >
             <Radio.Button value="all">全部</Radio.Button>
             <Radio.Button value="true">已发布</Radio.Button>
             <Radio.Button value="false">未发布</Radio.Button>
           </Radio.Group>
+          <Button
+            type={isManageMode ? 'primary' : 'default'}
+            onClick={toggleManageMode}
+            style={{ marginRight: '8px' }}
+          >
+            {isManageMode ? '退出管理' : '管理'}
+          </Button>
+          {isManageMode && (
+            <Badge count={selectedIds.length}>
+              <Button danger onClick={handleBatchUnstar} disabled={selectedIds.length === 0}>
+                批量取消标星
+              </Button>
+            </Badge>
+          )}
         </div>
       </div>
-      <div className={styles.content}>
-        {loading && (
+      <div className={styles.content} ref={contentRef}>
+        {loading && page === 1 && (
           <div style={{ textAlign: 'center', padding: '40px 0' }}>
             <Spin />
           </div>
         )}
-        {!loading && started && displayList.length === 0 && (
+        {!loading && started && list.length === 0 && (
           <div className={styles.emptyContainer}>
             <Empty
               image={Empty.PRESENTED_IMAGE_SIMPLE}
@@ -245,13 +411,51 @@ const Star: FC = () => {
             />
           </div>
         )}
-        {!loading && displayList.length > 0 && (
+        {list.length > 0 && (
           <div className={styles.questionList}>
-            {displayList.map((q: any) => {
+            {isManageMode && (
+              <div className={styles.batchActions}>
+                <Checkbox
+                  onChange={e => handleSelectAll(e.target.checked)}
+                  checked={selectedIds.length === list.length && list.length > 0}
+                  indeterminate={selectedIds.length > 0 && selectedIds.length < list.length}
+                >
+                  全选
+                </Checkbox>
+                <div>
+                  <Button danger onClick={handleBatchUnstar} disabled={selectedIds.length === 0}>
+                    批量取消标星
+                  </Button>
+                </div>
+              </div>
+            )}
+            {list.map((q: any) => {
               const { _id, title, isPublished, answerCount, createdAt } = q
 
               return (
-                <div key={_id} className={styles.questionItem}>
+                <div
+                  key={_id}
+                  className={`${styles.questionItem} ${isManageMode ? styles.manageMode : ''} ${
+                    selectedIds.includes(_id) ? styles.selected : ''
+                  }`}
+                  onClick={e => {
+                    if (
+                      (e.target as HTMLElement).closest(`.${styles.questionActions}`) ||
+                      (e.target as HTMLElement).closest(`.${styles.itemCheckbox}`)
+                    ) {
+                      return
+                    }
+                    handleEdit(_id)
+                  }}
+                  style={{ cursor: 'pointer' }}
+                >
+                  {isManageMode && (
+                    <Checkbox
+                      className={styles.itemCheckbox}
+                      onChange={e => handleSelect(_id, e.target.checked)}
+                      checked={selectedIds.includes(_id)}
+                    />
+                  )}
                   <div className={styles.questionTitle} title={title || `文件标题${_id}`}>
                     <StarFilled style={{ color: '#fadb14', marginRight: '6px' }} />
                     {title || `文件标题${_id}`}
@@ -278,7 +482,7 @@ const Star: FC = () => {
                     <button
                       className={styles.actionButton}
                       onClick={() => handleStar(_id)}
-                      title="取消星标"
+                      title="取消标星"
                     >
                       <StarFilled />
                     </button>
@@ -317,15 +521,7 @@ const Star: FC = () => {
             })}
           </div>
         )}
-        {!loading && displayList.length > 0 && (
-          <div className={styles.loadMore}>
-            {total > 6 && (
-              <div>
-                显示 {displayList.length} / {total} 项
-              </div>
-            )}
-          </div>
-        )}
+        {list.length > 0 && <div className={styles.loadMore}>{LoadMoreContentElem}</div>}
       </div>
     </>
   )

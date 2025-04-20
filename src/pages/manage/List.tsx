@@ -1,5 +1,18 @@
 import React, { FC, useEffect, useState, useRef, useMemo } from 'react'
-import { Typography, Spin, Empty, Button, Input, message, Modal, Radio } from 'antd'
+import {
+  Typography,
+  Spin,
+  Empty,
+  Button,
+  Input,
+  message,
+  Modal,
+  Radio,
+  Checkbox,
+  Dropdown,
+  Menu,
+  Badge,
+} from 'antd'
 import {
   PlusOutlined,
   StarOutlined,
@@ -52,6 +65,9 @@ const List: FC = () => {
   const [searchParams, setSearchParams] = useSearchParams() // url 参数，虽然没有 page pageSize ，但有 keyword
   const keyword = searchParams.get(LIST_SEARCH_PARAM_KEY) || ''
   const isPublished = searchParams.get('isPublished') // 获取发布状态筛选参数
+
+  const [isManageMode, setIsManageMode] = useState(false)
+  const [selectedIds, setSelectedIds] = useState<string[]>([])
 
   // 创建新问卷
   const { loading: createLoading, run: handleCreateClick } = useRequest(createQuestionService, {
@@ -315,6 +331,93 @@ const List: FC = () => {
     nav(`/question/stat/${id}`)
   }
 
+  const toggleManageMode = () => {
+    setIsManageMode(!isManageMode)
+    setSelectedIds([])
+  }
+
+  const handleSelect = (id: string, checked: boolean) => {
+    if (checked) {
+      setSelectedIds([...selectedIds, id])
+    } else {
+      setSelectedIds(selectedIds.filter(item => item !== id))
+    }
+  }
+
+  const handleSelectAll = (checked: boolean) => {
+    if (checked) {
+      setSelectedIds(list.map(q => q._id))
+    } else {
+      setSelectedIds([])
+    }
+  }
+
+  const handleBatchStar = async () => {
+    if (selectedIds.length === 0) {
+      message.warning('请先选择问卷')
+      return
+    }
+
+    try {
+      const loadingMsg = message.loading({ content: '操作中...', duration: 0 })
+
+      const promises = selectedIds.map(id => updateQuestionService(id, { isStar: true }))
+
+      await Promise.all(promises)
+      loadingMsg()
+
+      message.success(`成功标星 ${selectedIds.length} 个问卷`)
+
+      setList(
+        list.map(q => {
+          if (selectedIds.includes(q._id)) {
+            return { ...q, isStar: true }
+          }
+          return q
+        })
+      )
+
+      setIsManageMode(false)
+      setSelectedIds([])
+    } catch (error) {
+      message.error('操作失败')
+    }
+  }
+
+  const handleBatchDelete = () => {
+    if (selectedIds.length === 0) {
+      message.warning('请先选择问卷')
+      return
+    }
+
+    Modal.confirm({
+      title: '确认删除',
+      content: `确定将已选择的 ${selectedIds.length} 个问卷放入回收站吗？`,
+      okText: '确认',
+      cancelText: '取消',
+      onOk: async () => {
+        try {
+          const loadingMsg = message.loading({ content: '操作中...', duration: 0 })
+
+          const promises = selectedIds.map(id => updateQuestionService(id, { isDeleted: true }))
+
+          await Promise.all(promises)
+          loadingMsg()
+
+          message.success(`已将 ${selectedIds.length} 个问卷移至回收站`)
+
+          setList(list.filter(q => !selectedIds.includes(q._id)))
+          setTotal(prev => prev - selectedIds.length)
+
+          setIsManageMode(false)
+          setSelectedIds([])
+        } catch (error) {
+          message.error('操作失败')
+        }
+      },
+    })
+  }
+
   return (
     <>
       <div className={styles.header}>
@@ -337,11 +440,35 @@ const List: FC = () => {
             optionType="button"
             buttonStyle="solid"
             size="middle"
+            style={{ marginRight: '8px' }}
           >
             <Radio.Button value="all">全部</Radio.Button>
             <Radio.Button value="true">已发布</Radio.Button>
             <Radio.Button value="false">未发布</Radio.Button>
           </Radio.Group>
+          <Button
+            type={isManageMode ? 'primary' : 'default'}
+            onClick={toggleManageMode}
+            style={{ marginRight: '8px' }}
+          >
+            {isManageMode ? '退出管理' : '管理'}
+          </Button>
+          {isManageMode && (
+            <Badge count={selectedIds.length}>
+              <Button.Group>
+                <Button
+                  type="primary"
+                  onClick={handleBatchStar}
+                  disabled={selectedIds.length === 0}
+                >
+                  批量标星
+                </Button>
+                <Button danger onClick={handleBatchDelete} disabled={selectedIds.length === 0}>
+                  批量删除
+                </Button>
+              </Button.Group>
+            </Badge>
+          )}
         </div>
       </div>
       <div className={styles.content} ref={contentRef}>
@@ -363,11 +490,44 @@ const List: FC = () => {
         ) : (
           <>
             <div className={styles.questionList}>
+              {isManageMode && (
+                <div className={styles.batchActions}>
+                  <Checkbox
+                    onChange={e => handleSelectAll(e.target.checked)}
+                    checked={selectedIds.length === list.length && list.length > 0}
+                    indeterminate={selectedIds.length > 0 && selectedIds.length < list.length}
+                  >
+                    全选
+                  </Checkbox>
+                </div>
+              )}
               {list.map((q: any) => {
                 const { _id, title, isPublished, isStar, answerCount, createdAt } = q
 
                 return (
-                  <div key={_id} className={styles.questionItem}>
+                  <div
+                    key={_id}
+                    className={`${styles.questionItem} ${isManageMode ? styles.manageMode : ''} ${
+                      selectedIds.includes(_id) ? styles.selected : ''
+                    }`}
+                    onClick={e => {
+                      if (
+                        (e.target as HTMLElement).closest(`.${styles.questionActions}`) ||
+                        (e.target as HTMLElement).closest(`.${styles.itemCheckbox}`)
+                      ) {
+                        return
+                      }
+                      handleEdit(_id)
+                    }}
+                    style={{ cursor: 'pointer' }}
+                  >
+                    {isManageMode && (
+                      <Checkbox
+                        className={styles.itemCheckbox}
+                        onChange={e => handleSelect(_id, e.target.checked)}
+                        checked={selectedIds.includes(_id)}
+                      />
+                    )}
                     <div className={styles.questionTitle} title={title || `文件标题${_id}`}>
                       {isStar && <StarFilled style={{ color: '#fadb14', marginRight: '6px' }} />}
                       {title || `文件标题${_id}`}
