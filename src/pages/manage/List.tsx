@@ -23,6 +23,8 @@ import {
   DeleteOutlined,
   SearchOutlined,
   FilterOutlined,
+  CheckCircleOutlined,
+  CloseCircleOutlined,
 } from '@ant-design/icons'
 import { useTitle, useDebounceFn, useRequest } from 'ahooks'
 import { useNavigate, useSearchParams } from 'react-router-dom'
@@ -418,6 +420,26 @@ const List: FC = () => {
     })
   }
 
+  // 添加发布/取消发布功能
+  const handlePublish = async (id: string, isPublished: boolean) => {
+    try {
+      await updateQuestionService(id, { isPublished: !isPublished })
+      message.success(isPublished ? '已取消发布' : '已发布')
+
+      // 更新本地数据
+      setList(
+        list.map(q => {
+          if (q._id === id) {
+            return { ...q, isPublished: !isPublished }
+          }
+          return q
+        })
+      )
+    } catch (error) {
+      message.error('操作失败')
+    }
+  }
+
   return (
     <>
       <div className={styles.header}>
@@ -564,6 +586,13 @@ const List: FC = () => {
                         title="编辑问卷"
                       >
                         <EditOutlined />
+                      </button>
+                      <button
+                        className={styles.actionButton}
+                        onClick={() => handlePublish(_id, isPublished)}
+                        title={isPublished ? '取消发布' : '发布问卷'}
+                      >
+                        {isPublished ? <CheckCircleOutlined /> : <CloseCircleOutlined />}
                       </button>
                       <button
                         className={`${styles.actionButton} ${!isPublished ? styles.disabled : ''}`}
