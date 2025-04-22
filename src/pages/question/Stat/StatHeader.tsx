@@ -66,7 +66,7 @@ const StatHeader: FC = () => {
     )
 
     return (
-      <Space>
+      <Space style={{ justifyContent: 'center' }}>
         <Input value={url} style={{ width: '300px' }} ref={urlInputRef} />
         <Tooltip title="拷贝链接">
           <Button icon={<CopyOutlined />} onClick={copy}></Button>
@@ -82,12 +82,10 @@ const StatHeader: FC = () => {
     <div className={styles['header-wrapper']}>
       <div className={styles.header}>
         <div className={styles.left}>
-          <Space>
-            <Button type="link" icon={<LeftOutlined />} onClick={() => nav(-1)}>
-              返回
-            </Button>
-            <Title>{title}</Title>
-          </Space>
+          <Button type="link" icon={<LeftOutlined />} onClick={() => nav(-1)}>
+            返回
+          </Button>
+          <Title style={{ marginLeft: '20px' }}>{title}</Title>
         </div>
         <div className={styles.main}>{LinkAndQRCodeElem}</div>
         <div className={styles.right}>

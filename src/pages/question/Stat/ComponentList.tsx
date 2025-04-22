@@ -27,11 +27,9 @@ const ComponentList: FC<PropsType> = props => {
           const { Component } = componentConf
 
           // 拼接 class name
-          const wrapperDefaultClassName = styles['component-wrapper']
-          const selectedClassName = styles.selected
           const wrapperClassName = classNames({
-            [wrapperDefaultClassName]: true,
-            [selectedClassName]: fe_id === selectedComponentId, // 是否选中
+            [styles['component-wrapper']]: true,
+            [styles.selected]: fe_id === selectedComponentId,
           })
 
           return (

@@ -2,29 +2,49 @@
     background-color: #fff;
     border-bottom: 1px solid #e8e8e8;
     padding: 12px 0;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
+    position: relative;
+    z-index: 10;
 }
 
 .header {
     display: flex;
-    margin: 0 24px;
+    width: 100%;
+    padding: 0;
+    align-items: center;
 
     .left {
         flex: 1;
+        min-width: 200px;
+        display: flex;
+        align-items: center;
+
+        :global(.ant-btn-link) {
+            padding-left: 16px;
+            padding-right: 0;
+            font-size: 15px;
+        }
 
         h1 {
             font-size: 18px;
             margin-bottom: 0;
-            line-height: 1;
+            margin-left: 20px;
+            line-height: 1.5;
         }
+    }
+
+    .main {
+        flex: 2;
+        display: flex;
+        justify-content: center;
+        align-items: center;
     }
 
     .right {
         flex: 1;
-        text-align: right;
-    }
-
-    .main {
-        flex: 1;
-        text-align: center;
+        min-width: 200px;
+        display: flex;
+        justify-content: flex-end;
+        padding-right: 16px;
     }
 }

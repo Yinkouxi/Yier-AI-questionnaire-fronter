@@ -1,25 +1,42 @@
 .container {
-  min-height: 100%;
+  padding: 8px;
+  height: 100%;
   overflow-y: auto;
-  background-color: #fff;
 }
 
 .component-wrapper {
-  margin: 12px;
-  border: 1px solid #fff;
-  padding: 12px 6px;
+  margin-bottom: 12px;
+  padding: 8px;
+  border: 1px solid transparent;
   border-radius: 3px;
+  cursor: pointer;
+  transition: all 0.2s;
 
   &:hover {
-    border-color: #d9d9d9;
+    background-color: #f5f7fa;
   }
 }
 
 .selected {
-  border-color: #1890ff !important;
+  border: 1px solid #1890ff !important;
+  background-color: #e6f7ff;
 }
 
 .component {
-  pointer-events: none; // 屏蔽鼠标行为，组件不要点击
-  opacity: .8;
+  pointer-events: none;
+  opacity: 1;
+  /* 确保组件在容器中正确渲染 */
+  max-width: 100%;
+  overflow: hidden;
+
+  /* 确保内部表单元素缩放到适合的尺寸 */
+  :global {
+    .ant-input,
+    .ant-radio-group,
+    .ant-checkbox-group,
+    .ant-select {
+      transform: scale(0.9);
+      transform-origin: left top;
+    }
+  }
 }
